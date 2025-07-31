@@ -1,0 +1,57 @@
+from flask import Flask, render_template, request, redirect, url_for, session
+import requests
+import os
+
+app = Flask(__name__)
+app.secret_key = 'replace-this-key'  # For session tracking
+
+# Nutritionix API credentials
+API_ID = os.getenv("NUTRITIONIX_APP_ID")
+API_KEY = os.getenv("NUTRITIONIX_API_KEY")
+BASE_URL = "https://trackapi.nutritionix.com/v2"
+
+headers = {
+    "x-app-id": API_ID,
+    "x-app-key": API_KEY,
+    "x-remote-user-id": "0"
+}
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if "meals" not in session:
+        session["meals"] = []
+
+    result = None
+    if request.method == "POST":
+        query = request.form.get("food")
+        response = requests.post(
+            f"{BASE_URL}/natural/nutrients",
+            headers=headers,
+            json={"query": query}
+        )
+        if response.ok:
+            result = response.json()["foods"][0]
+            session["meals"].append(result)
+            session.modified = True
+        else:
+            result = {"food_name": "Error fetching data."}
+
+    return render_template("index.html", result=result, meals=session["meals"])
+
+@app.route("/summary")
+def summary():
+    total = {"calories": 0, "protein": 0, "fat": 0, "carbs": 0}
+    for meal in session.get("meals", []):
+        total["calories"] += meal["nf_calories"]
+        total["protein"] += meal["nf_protein"]
+        total["fat"] += meal["nf_total_fat"]
+        total["carbs"] += meal["nf_total_carbohydrate"]
+    return render_template("summary.html", total=total)
+
+@app.route("/reset")
+def reset():
+    session.pop("meals", None)
+    return redirect(url_for("index"))
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080, debug=True)

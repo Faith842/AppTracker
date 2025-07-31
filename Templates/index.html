@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartNutrition Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>SmartNutrition Tracker</h1>
+    </header>
+    <main>
+        <form method="POST">
+            <input type="text" name="query" placeholder="Enter a food item" required>
+            <button type="submit">Search & Add</button>
+        </form>
+
+        <div class="meal-log">
+            <h2>Meal Log</h2>
+            {% if meals %}
+                <ul>
+                {% for meal in meals %}
+                    <li>{{ meal['name'] }} - {{ meal['calories'] }} kcal</li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p>No meals added yet.</p>
+            {% endif %}
+            <p>
+                <a href="{{ url_for('summary') }}">View Summary</a> | 
+                <a href="{{ url_for('reset') }}">Reset</a>
+            </p>
+        </div>
+    </main>
+</body>
+</html>
